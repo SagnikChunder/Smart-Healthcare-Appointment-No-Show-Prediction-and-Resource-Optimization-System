@@ -6,6 +6,9 @@ from joblib import load
 
 # Load the trained model
 model = load("model.pkl")
+plt.plot(x, y)
+plt.title("Plot")
+st.pyplot(plt)
 
 # Title
 st.title("🧠 Smart Healthcare: No-Show Appointment Predictor")
