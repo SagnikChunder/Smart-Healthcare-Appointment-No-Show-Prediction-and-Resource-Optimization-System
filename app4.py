@@ -1,26 +1,38 @@
 import gradio as gr
+import pandas as pd
 import joblib
-import numpy as np
 
-model = joblib.load("model.pkl")
+# Load model
+model = joblib.load("xgb_model.pkl")
 
-def predict(age, waiting_days, alcoholism, sms_received, sch_hour):
-    X = np.array([[age, waiting_days, alcoholism, sms_received, sch_hour]])
-    prediction = model.predict(X)[0]
-    proba = model.predict_proba(X)[0][1]
-    return f"{'No-Show' if prediction == 1 else 'Show'} (Probability: {proba:.2f})"
+# Prediction function
+def predict_show(gender, age, hypertension, diabetes, sms_received, waiting_days):
+    data = pd.DataFrame({
+        "Gender": [gender],
+        "Age": [age],
+        "Hypertension": [hypertension],
+        "Diabetes": [diabetes],
+        "SMS_received": [sms_received],
+        "WaitingDays": [waiting_days]
+    })
+    
+    prediction = model.predict(data)[0]
+    return "Will No-Show 😐" if prediction == 1 else "Will Attend ✅"
 
-demo = gr.Interface(
-    fn=predict,
+# UI Interface
+iface = gr.Interface(
+    fn=predict_show,
     inputs=[
-        gr.Slider(0, 100, label="Age"),
-        gr.Slider(0, 100, label="Waiting Days"),
-        gr.Radio([0, 1], label="Alcoholism"),
-        gr.Radio([0, 1], label="SMS Received"),
-        gr.Slider(0, 23, label="Scheduled Hour"),
+        gr.Dropdown(["M", "F"], label="Gender"),
+        gr.Slider(0, 100, step=1, label="Age"),
+        gr.Radio([0, 1], label="Hypertension (0=No, 1=Yes)"),
+        gr.Radio([0, 1], label="Diabetes (0=No, 1=Yes)"),
+        gr.Radio([0, 1], label="SMS Received (0=No, 1=Yes)"),
+        gr.Slider(-10, 60, step=1, label="Waiting Days")
     ],
-    outputs="text",
-    title="No-Show Appointment Predictor"
+    outputs=gr.Textbox(label="Prediction"),
+    title="Smart Healthcare: No-Show Prediction",
+    description="Enter patient details to predict whether they will attend their appointment.",
 )
 
-demo.launch()
+iface.launch()
