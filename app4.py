@@ -1,76 +1,49 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+import joblib
 import matplotlib.pyplot as plt
-from joblib import load
 
-# Load the trained model
-model = load("model.pkl")
+# Load trained model
+model = joblib.load("model.pkl")
 
-# Title
-st.title("🧠 Smart Healthcare: No-Show Appointment Predictor")
+# App Title
+st.title("Smart Healthcare: No-Show Appointment Predictor")
 
-st.markdown("Predict whether a patient will show up for a medical appointment based on the input features.")
+# Sidebar Inputs
+st.sidebar.header("Patient Details")
 
-st.subheader("📋 Input Patient Information")
+age = st.sidebar.slider("Age", 0, 100, 30)
+waiting_days = st.sidebar.slider("Waiting Days", 0, 100, 10)
+alcoholism = st.sidebar.selectbox("Alcoholism", [0, 1])
+sms_received = st.sidebar.selectbox("SMS Received", [0, 1])
+sch_hour = st.sidebar.slider("Scheduled Hour", 0, 23, 10)
 
-# Input form
-age = st.slider("Age", 0, 100, 35)
-gender = st.selectbox("Gender", ["Female", "Male"])
-scholarship = st.selectbox("Scholarship", ["No", "Yes"])
-hipertension = st.selectbox("Hipertension", ["No", "Yes"])
-diabetes = st.selectbox("Diabetes", ["No", "Yes"])
-alcoholism = st.selectbox("Alcoholism", ["No", "Yes"])
-handcap = st.slider("Handcap Level", 0, 4, 0)
-sms_received = st.selectbox("SMS Received", ["No", "Yes"])
-weekday = st.selectbox("Appointment Weekday", ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"])
-scheduled_hour = st.slider("Scheduled Hour (24hr)", 0, 23, 14)
-waiting_days = st.slider("Waiting Days", 0, 60, 5)
+# Construct input DataFrame (must match model training columns)
+input_data = pd.DataFrame({
+    "Age": [age],
+    "WaitingDays": [waiting_days],
+    "Alcoholism": [alcoholism],
+    "SMS_received": [sms_received],
+    "ScheduledHour": [sch_hour]
+})
 
-# Encode categorical variables
-gender = 1 if gender == "Male" else 0
-scholarship = 1 if scholarship == "Yes" else 0
-hipertension = 1 if hipertension == "Yes" else 0
-diabetes = 1 if diabetes == "Yes" else 0
-alcoholism = 1 if alcoholism == "Yes" else 0
-sms_received = 1 if sms_received == "Yes" else 0
-weekday_map = {"Monday": 0, "Tuesday": 1, "Wednesday": 2, "Thursday": 3, 
-               "Friday": 4, "Saturday": 5, "Sunday": 6}
-appointment_weekday = weekday_map[weekday]
+# Show input
+st.subheader("Patient Info:")
+st.write(input_data)
 
-# Create input dataframe
-input_data = {
-    'Age': age,
-    'Scholarship': scholarship,
-    'Hipertension': hipertension,
-    'Diabetes': diabetes,
-    'SMS_received': sms_received,
-    'Alcoholism': alcoholism,
-    'AppointmentWeekDay': appointment_weekday,
-    'Gender': gender,
-    'Handcap': handcap,
-    'ScheduledHour': scheduled_hour,
-    'WaitingDays': waiting_days
-}
-feature_list = list(input_data.keys())
-X = pd.DataFrame([input_data])
-
-# Predict
+# Make prediction
 if st.button("Predict No-Show"):
-    prediction = model.predict(X)[0]
-    prob = model.predict_proba(X)[0][1]
+    prediction = model.predict(input_data)[0]
+    prediction_proba = model.predict_proba(input_data)[0][1]
 
-    st.subheader("📢 Prediction Result")
-    st.write(f"### {'❌ No-Show' if prediction == 1 else '✅ Show'}")
-    st.write(f"**Probability of No-Show:** `{prob:.2f}`")
+    if prediction == 1:
+        st.error(f"❌ Likely to NO-SHOW (Probability: {prediction_proba:.2f})")
+    else:
+        st.success(f"✅ Likely to ATTEND (Probability: {prediction_proba:.2f})")
 
-    # Probability bar chart
+    # Plot probability
     fig, ax = plt.subplots()
-    ax.bar(["Show", "No-Show"], [1 - prob, prob], color=["green", "red"])
-    ax.set_ylabel("Probability")
+    ax.bar(["Show", "No-Show"], model.predict_proba(input_data)[0], color=["green", "red"])
     ax.set_title("Prediction Probability")
     st.pyplot(fig)
-
-    # Display input summary
-    st.subheader("📊 Input Summary")
-    st.dataframe(X.T.rename(columns={0: "Value"}))
