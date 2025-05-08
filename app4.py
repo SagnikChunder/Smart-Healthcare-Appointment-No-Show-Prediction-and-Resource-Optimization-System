@@ -1,11 +1,11 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
+from joblib import load
 import matplotlib.pyplot as plt
 
 # Load trained model
-model = joblib.load("model.pkl")
+model = load("model.pkl")
 
 # App Title
 st.title("Smart Healthcare: No-Show Appointment Predictor")
