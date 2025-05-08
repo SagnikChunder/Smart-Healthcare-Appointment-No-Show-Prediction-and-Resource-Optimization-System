@@ -1,6 +1,5 @@
-streamlit
-pandas
+dash
 numpy
 scikit-learn
-matplotlib
+xgboost
 joblib
